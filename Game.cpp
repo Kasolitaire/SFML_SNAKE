@@ -50,6 +50,16 @@ Vector2f Game::GetLegalFoodPosition(vector<Vector2f> segmentPositions)
 	return legalPositions[dist(rd)];
 }
 
+void Game::Clear()
+{
+	m_renderWindow.clear(Color::Red);
+}
+
+void Game::Display()
+{
+	m_renderWindow.display();
+}
+
 bool Game::FoodCollision(Vector2f foodPosition, vector<Vector2f> segmentPositions)
 {
 	vector<Vector2f>::iterator iter;
@@ -63,6 +73,8 @@ bool Game::FoodCollision(Vector2f foodPosition, vector<Vector2f> segmentPosition
 
 Game::Game(RenderWindow& renderWindow) : m_renderWindow(renderWindow), m_GUI(GUI(renderWindow)) // not sure why angry since it should call default constructor
 {
+	
+	
 	int rows = 0;
 	int columns = 0;
 
@@ -105,18 +117,16 @@ void Game::StartGame()
 		Event event;
 		if (m_GUI.m_GUIOpen) 
 		{
-			while (m_renderWindow.pollEvent(event))
+			if (m_GUI.CheckForPlay())
 			{
-				if (m_GUI.CheckForPlay()) 
-				{
-					cout << "play" << endl;
-					m_GUI.m_GUIOpen = false;
-				} 
-				else if (m_GUI.CheckForExit()) 
-				{
-					m_renderWindow.close();
-				}
+				cout << "play" << endl;
+				m_GUI.m_GUIOpen = false;
 			}
+			else if (m_GUI.CheckForExit())
+			{
+				m_renderWindow.close();
+			}
+			
 			m_renderWindow.clear();
 			m_GUI.DrawText();
 			m_renderWindow.display();
@@ -137,14 +147,12 @@ Time Game::UpdateClock()
 	return deltaTime;
 }
 
-void Game::Render(Snake& r_snake)
+void Game::Draw(Snake& r_snake)
 {
-	m_renderWindow.clear(Color::Red);
 	m_renderWindow.draw(m_food);
 	r_snake.DrawHeadSegment(m_renderWindow);
 	r_snake.DrawSegments(m_renderWindow);
 	m_GUI.DrawScore();
-	m_renderWindow.display();
 }
 
 void Game::HandleInput()
@@ -183,14 +191,20 @@ void Game::HandleInput()
 void Game::StandardGameLoop()
 {
 	
+	/*RectangleShape background(Vector2f(1024, 1024));
+	background.setPosition(0, 0);
+	background.setFillColor(Color::Black);*/
+
+	
 	Sound sound(AssetManager::GetSoundBuffer("assets\\question.wav"));
-	sound.setVolume(100);
+	sound.setVolume(20);
 	
 	m_snake = Snake(SEGMENT_SIZE, HEAD_COLOR, WINDOW_RESOLUTION);
 	m_food.setSize(Vector2f(SEGMENT_SIZE.x, SEGMENT_SIZE.y));
 	m_food.setFillColor(Color::Blue);
 	Vector2f legalFoodPosition = GetLegalFoodPosition(m_snake.GetAllSegmentPositions());
 	m_food.setPosition(legalFoodPosition);
+	m_food.setTexture(&(AssetManager::GetTexture("assets\\muffin.png")));
 
 	while (m_renderWindow.isOpen()) 
 	{
@@ -224,8 +238,10 @@ void Game::StandardGameLoop()
 				sound.play();
 			}
 		}
-		
-		Render(m_snake);
+		Clear();
+		/*m_renderWindow.draw(background);*/
+		Draw(m_snake);
+		Display();
 	}
 }
 

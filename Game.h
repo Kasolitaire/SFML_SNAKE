@@ -11,16 +11,18 @@ class Game
 {
 public:
 	Game(RenderWindow& renderWindow);
+	void StartGame();
+private:
 	static bool OutOfBoundsLoseState(const Vector2f headSegmentPosition);
 	static bool CollisionLoseState(const vector<RectangleShape*>& segments, const Vector2f headSegmentPosition);
 	static bool FoodCollision(Vector2f foodPosition, vector<Vector2f> segmentPositions);
 	Vector2f GetLegalFoodPosition(vector<Vector2f> segmentPositions);
-	void StartGame();
+	void Clear();
+	void Display();
 	void StandardGameLoop();
-	Time UpdateClock();
-	void Render(Snake& r_snake); 
 	void HandleInput();
-private:
+	Time UpdateClock();
+	void Draw(Snake& r_snake); 
 	RenderWindow& m_renderWindow;
 	RectangleShape m_food;
 	Vector2f** m_Grid;
