@@ -27,40 +27,33 @@ void GUI::OnHover()
 
 void GUI::DrawText()
 {
-	for (int i = 0; i < m_GUIText.size(); i++) 
+	
+	for (auto& iter : m_GUITextMap) 
 	{
-		r_renderWindow.draw(m_GUIText[i]);
+		r_renderWindow.draw(iter.second);
 	}
 }
 
 GUI::GUI(RenderWindow& renderWindow) : r_renderWindow(renderWindow)
 {
+	Font& font = AssetManager::GetFont(FONT_PATH);
 	
-	
-	m_font.loadFromFile(FONT_PATH);
-
 	m_scoreText.setCharacterSize(50); // in pixels, not points!
 	m_scoreText.setFillColor(sf::Color::White);
 	m_scoreText.setPosition(50, 0); // maybe should be coordintaes should be global
 	m_scoreText.setString("SCORE 0");
-	m_scoreText.setFont(m_font);
+	m_scoreText.setFont(font);
 
-	for (string option : GUIOptions) 
-	{
-		m_GUIText.push_back(Text());
-		m_GUIText.back().setFont(m_font);
-		m_GUIText.back().setString(option);
-		m_GUIText.back().setFillColor(Color::White);
-		m_GUIText.back().setCharacterSize(SEGMENT_SIZE.x);
-	}
-
-	m_GUIText[0].setPosition(WINDOW_RESOLUTION.x / 2, WINDOW_RESOLUTION.y / 2);
-	m_GUIText[1].setPosition(WINDOW_RESOLUTION.x / 2, WINDOW_RESOLUTION.y / 2 + 50); //needs to be put elsewhere...
+	m_GUITextMap["PLAY"] = CreateTextOption("PLAY", font, Color::White, 50);
+	m_GUITextMap["EXIT"] = CreateTextOption("EXIT", font, Color::White, 50);
+	
+	m_GUITextMap["PLAY"].setPosition(WINDOW_RESOLUTION.x / 2, WINDOW_RESOLUTION.y / 2);
+	m_GUITextMap["EXIT"].setPosition(WINDOW_RESOLUTION.x / 2, WINDOW_RESOLUTION.y / 2 + 50);
 }
 
 bool GUI::CheckForPlay()
 {
-	if (CheckForHover(m_GUIText[0]) && Mouse::isButtonPressed(Mouse::Button::Left))
+	if (CheckForHover(m_GUITextMap["PLAY"]) && Mouse::isButtonPressed(Mouse::Button::Left))
 		return true;
 	else
 		return false;
@@ -68,7 +61,7 @@ bool GUI::CheckForPlay()
 
 bool GUI::CheckForExit()
 {
-	if (CheckForHover(m_GUIText[1]) && Mouse::isButtonPressed(Mouse::Button::Left))
+	if (CheckForHover(m_GUITextMap["EXIT"]) && Mouse::isButtonPressed(Mouse::Button::Left))
 		return true;
 	else
 		return false;
@@ -89,4 +82,14 @@ void GUI::ScoreReset()
 void GUI::DrawScore()
 {
 	r_renderWindow.draw(m_scoreText);
+}
+
+Text GUI::CreateTextOption(const string& content, const Font& font, Color color, const unsigned int& size)
+{
+	Text text;
+	text.setFont(font);
+	text.setString(content);
+	text.setFillColor(color);
+	text.setCharacterSize(size);
+	return text;
 }

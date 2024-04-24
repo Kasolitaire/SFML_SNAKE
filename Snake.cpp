@@ -1,8 +1,11 @@
-#include <iostream>
-#include "Snake.h"
-#include "SFML/Window.hpp"
-#include "SFML/Graphics.hpp"
+#include <iostream>;
+#include "Snake.h";
+#include "SFML/Window.hpp";
+#include "SFML/Graphics.hpp";
 using namespace sf;
+Snake::Snake()
+{
+}
 Snake::Snake(const Vector2f segmentSize, const Color color, Vector2u windowResolution): //refactor needed
 	m_IncrementAmmount(segmentSize.x)
 {
@@ -26,7 +29,7 @@ bool Snake::DrawHeadSegment(RenderWindow& renderWindow)
 	return true;
 }
 
-bool Snake::SetDirection(Direction desiredDirection)
+void Snake::SetDirection(Direction desiredDirection)
 {
 	switch (desiredDirection)
 	{
@@ -47,7 +50,6 @@ bool Snake::SetDirection(Direction desiredDirection)
 			m_desiredDirection = desiredDirection;
 		break;
 	}
-	return true;
 }
 RectangleShape* Snake::CreateSegment()
 {
@@ -57,31 +59,33 @@ RectangleShape* Snake::CreateSegment()
 	p_newSegment->setOutlineThickness(2);// not the greatest no option to change color seperate from head
 	return p_newSegment;
 }
-bool Snake::MoveHeadSegmentSetPeriod()
+bool Snake::MoveHeadSegmentSetPeriod(const Time& totalTimeElapsed)
 {
-	if (clock.getElapsedTime().asSeconds() > m_TimeToMoveSeconds)
+	Time timeElapsed = totalTimeElapsed - m_previousMovementTimeStamp;
+
+	if (timeElapsed.asSeconds() > m_TimeToMoveSeconds)
 	{
 		m_PreviousHeadPosition = m_SnakeHeadRect.getPosition();
-		switch (m_currentDirection) 
+		switch (m_desiredDirection) 
 		{
 		case UP:
 			m_SnakeHeadRect.move(0, -m_IncrementAmmount);
-			clock.restart();
+			m_previousMovementTimeStamp = totalTimeElapsed;
 			m_currentDirection = m_desiredDirection;
 			return true;
 		case DOWN:
 			m_SnakeHeadRect.move(0, m_IncrementAmmount);
-			clock.restart();
+			m_previousMovementTimeStamp = totalTimeElapsed;
 			m_currentDirection = m_desiredDirection;
 			return true;
 		case LEFT:
 			m_SnakeHeadRect.move(m_IncrementAmmount, 0);
-			clock.restart();
+			m_previousMovementTimeStamp = totalTimeElapsed;
 			m_currentDirection = m_desiredDirection;
 			return true;
 		case RIGHT:
 			m_SnakeHeadRect.move(-m_IncrementAmmount, 0);
-			clock.restart();
+			m_previousMovementTimeStamp = totalTimeElapsed;
 			m_currentDirection = m_desiredDirection;
 			return true;
 		}
@@ -107,9 +111,9 @@ void Snake::AddSegment() // refactor needed
 	}*/
 }
 
-bool Snake::MoveAlongSnake()
+bool Snake::MoveAlongSnake(Time& totalTimeElapsed)
 {
-	if (MoveHeadSegmentSetPeriod())
+	if (MoveHeadSegmentSetPeriod(totalTimeElapsed))
 	{
 		MoveAlongSegments();
 		return true;
@@ -196,10 +200,14 @@ void Snake::DrawSegments(RenderWindow& renderWindow)
 	}
 }
 
-void Snake::AdjustRefreshPeriod(const float refreshMultiplier)
+void Snake::MultiplyRefreshPeriod(const float refreshMultiplier)
 {
-	m_TimeToMoveSeconds = refreshMultiplier * m_TimeToMoveSeconds;
-	static Clock clock;
+	m_TimeToMoveSeconds = m_TimeToMoveSeconds * refreshMultiplier;
+}
+
+void Snake::ReturnRefreshPeriodToDefault()
+{
+	m_TimeToMoveSeconds = m_defaultRefreshPeriod;
 }
 
 void Snake::ReverseSegments()

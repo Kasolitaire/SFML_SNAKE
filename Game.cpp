@@ -1,10 +1,11 @@
 #include <random>;
 #include <iostream>;
 #include "SFML/Audio.hpp";
-#include "AssetManager.h"
-#include "GameLogic.h"
+#include "AssetManager.h";
+#include "Game.h";
+
 using namespace std;
-bool GameLogic::OutOfBoundsLoseState(Vector2f headSegmentPosition) 
+bool Game::OutOfBoundsLoseState(Vector2f headSegmentPosition) 
 {
 	if (headSegmentPosition.x >= WINDOW_RESOLUTION.x || headSegmentPosition.x < 0 || headSegmentPosition.y >= WINDOW_RESOLUTION.y || headSegmentPosition.y < 0)
 	{
@@ -13,7 +14,7 @@ bool GameLogic::OutOfBoundsLoseState(Vector2f headSegmentPosition)
 	return false;
 }
 
-bool GameLogic::CollisionLoseState(const vector<RectangleShape*>& segments, const Vector2f headSegmentPosition)
+bool Game::CollisionLoseState(const vector<RectangleShape*>& segments, const Vector2f headSegmentPosition)
 {
 	for (int i = 0; i < segments.size(); i++) 
 	{
@@ -23,7 +24,7 @@ bool GameLogic::CollisionLoseState(const vector<RectangleShape*>& segments, cons
 	return false;
 }
 
-Vector2f GameLogic::GetLegalFoodPosition(vector<Vector2f> segmentPositions)
+Vector2f Game::GetLegalFoodPosition(vector<Vector2f> segmentPositions)
 {
 	const int gridColumns = m_GridColumns;
 	const int gridRows = m_GridRows;
@@ -49,7 +50,7 @@ Vector2f GameLogic::GetLegalFoodPosition(vector<Vector2f> segmentPositions)
 	return legalPositions[dist(rd)];
 }
 
-bool GameLogic::FoodCollision(Vector2f foodPosition, vector<Vector2f> segmentPositions)
+bool Game::FoodCollision(Vector2f foodPosition, vector<Vector2f> segmentPositions)
 {
 	vector<Vector2f>::iterator iter;
 	for (iter = segmentPositions.begin(); iter != segmentPositions.end(); ++iter) 
@@ -60,7 +61,7 @@ bool GameLogic::FoodCollision(Vector2f foodPosition, vector<Vector2f> segmentPos
 	return false;
 }
 
-GameLogic::GameLogic(RenderWindow& renderWindow) : m_renderWindow(renderWindow), m_GUI(GUI(renderWindow)) // not sure why angry since it should call default constructor
+Game::Game(RenderWindow& renderWindow) : m_renderWindow(renderWindow), m_GUI(GUI(renderWindow)) // not sure why angry since it should call default constructor
 {
 	int rows = 0;
 	int columns = 0;
@@ -95,22 +96,17 @@ GameLogic::GameLogic(RenderWindow& renderWindow) : m_renderWindow(renderWindow),
 	m_GridRows = rows;
 }
 
-bool GameLogic::StartGame()
+void Game::StartGame()
 {
 	// inside the main loop, between window.clear() and window.display()
 	
 	while (m_renderWindow.isOpen())
 	{
+		Event event;
 		if (m_GUI.m_GUIOpen) 
 		{
-			m_renderWindow.clear();
-			m_GUI.DrawText();
-			m_renderWindow.display();
-			while (m_renderWindow.pollEvent(m_event))
+			while (m_renderWindow.pollEvent(event))
 			{
-				m_renderWindow.clear();
-				m_GUI.DrawText();
-				m_renderWindow.display();
 				if (m_GUI.CheckForPlay()) 
 				{
 					cout << "play" << endl;
@@ -121,6 +117,9 @@ bool GameLogic::StartGame()
 					m_renderWindow.close();
 				}
 			}
+			m_renderWindow.clear();
+			m_GUI.DrawText();
+			m_renderWindow.display();
 		}
 		else 
 		{
@@ -128,81 +127,97 @@ bool GameLogic::StartGame()
 			m_GUI.m_GUIOpen = true;
 		}
 	}
-	return false;
 }
 
-bool GameLogic::StandardGameLoop()
+Time Game::UpdateClock()
+{
+	Time deltaTime = m_clock.getElapsedTime();
+	m_totalTimeElapsed += deltaTime;
+	m_clock.restart();
+	return deltaTime;
+}
+
+void Game::Render(Snake& r_snake)
+{
+	m_renderWindow.clear(Color::Red);
+	m_renderWindow.draw(m_food);
+	r_snake.DrawHeadSegment(m_renderWindow);
+	r_snake.DrawSegments(m_renderWindow);
+	m_GUI.DrawScore();
+	m_renderWindow.display();
+}
+
+void Game::HandleInput()
+ {
+	Event event;
+	while (m_renderWindow.pollEvent(event))
+	{
+
+		if (event.type == sf::Event::Closed)
+			m_renderWindow.close();
+		if (event.type == Event::KeyPressed)
+		{
+			switch (event.key.code)
+			{
+			case Keyboard::Key::W:
+				m_snake.SetDirection(UP);
+				break;
+			case Keyboard::Key::S:
+				m_snake.SetDirection(DOWN);
+				break;
+			case Keyboard::Key::A:
+				m_snake.SetDirection(RIGHT);
+				break;
+			case Keyboard::Key::D:
+				m_snake.SetDirection(LEFT);
+				break;
+			case Keyboard::Key::Space:
+				m_snake.AddSegment();
+			default:
+				break;
+			}
+		}
+	}
+}
+
+void Game::StandardGameLoop()
 {
 	
 	Sound sound(AssetManager::GetSoundBuffer("assets\\question.wav"));
 	sound.setVolume(100);
 	
-	Snake snake(SEGMENT_SIZE, HEAD_COLOR, WINDOW_RESOLUTION);
-	RectangleShape food;
-	food.setSize(Vector2f(SEGMENT_SIZE.x, SEGMENT_SIZE.y));
-	food.setFillColor(Color::Red);
-	Vector2f legalFoodPosition = GetLegalFoodPosition(snake.GetAllSegmentPositions());
-	food.setPosition(legalFoodPosition);
-	UniqueTimeTracker speedUpTracker;
+	m_snake = Snake(SEGMENT_SIZE, HEAD_COLOR, WINDOW_RESOLUTION);
+	m_food.setSize(Vector2f(SEGMENT_SIZE.x, SEGMENT_SIZE.y));
+	m_food.setFillColor(Color::Blue);
+	Vector2f legalFoodPosition = GetLegalFoodPosition(m_snake.GetAllSegmentPositions());
+	m_food.setPosition(legalFoodPosition);
 
 	while (m_renderWindow.isOpen()) 
 	{
-		while (m_renderWindow.pollEvent(m_event))
-		{
-			if (m_event.type == sf::Event::Closed)
-				m_renderWindow.close();
-			if (m_event.type == Event::KeyPressed)
-			{
-				switch (m_event.key.code)
-				{
-				case Keyboard::Key::W:
-					snake.SetDirection(UP);
-					break;
-				case Keyboard::Key::S:
-					snake.SetDirection(DOWN);
-					break;
-				case Keyboard::Key::A:
-					snake.SetDirection(RIGHT);
-					break;
-				case Keyboard::Key::D:
-					snake.SetDirection(LEFT);
-					break;
-				case Keyboard::Key::Space:
-					snake.AddSegment();
-				default:
-					break;
-				}
-			}
-		}
+		UpdateClock();
+		HandleInput();
 
-		m_renderWindow.clear();
-		m_GUI.DrawScore();
-		m_renderWindow.draw(food);
-		snake.DrawHeadSegment(m_renderWindow);
-		snake.DrawSegments(m_renderWindow);
-		/*if (speedUpTracker.HasTimeElapsedOnce(2))
-			snake.AdjustRefreshPeriod(2);*/
-		if (snake.MoveAlongSnake())
+		if (m_snake.MoveAlongSnake(m_totalTimeElapsed))
 		{
-			if (GameLogic::OutOfBoundsLoseState(snake.GetLocation())) // checks if head segement is no longer in viewscope
+			if (Game::OutOfBoundsLoseState(m_snake.GetLocation())) // checks if head segement is no longer in viewscope
 			{
-				cout << "out of bounds" << " " << snake.GetAllSegmentPositions()[0].x << endl;
+				cout << "out of bounds" << " " << m_snake.GetAllSegmentPositions()[0].x << endl;
 				break;
 			}
-			if (GameLogic::CollisionLoseState(snake.GetSegmentsAsReference(), snake.GetLocation()))
+			if (Game::CollisionLoseState(m_snake.GetSegmentsAsReference(), m_snake.GetLocation()))
 			{
 				cout << "collision detected" << endl;
 				//lose text
 				break;
 			}
-			if (GameLogic::FoodCollision(food.getPosition(), snake.GetAllSegmentPositions()))
+			if (Game::FoodCollision(m_food.getPosition(), m_snake.GetAllSegmentPositions()))
 			{
-				Vector2f legalFoodPosition = GetLegalFoodPosition(snake.GetAllSegmentPositions());
-				food.setPosition(legalFoodPosition);
-				snake.AddSegment();
+				Vector2f legalFoodPosition = GetLegalFoodPosition(m_snake.GetAllSegmentPositions());
+				m_food.setPosition(legalFoodPosition);
+				m_snake.AddSegment();
 				m_GUI.IncrementScore();
-				//snake.MoveHeadToBack();
-				/*snake.AdjustRefreshPeriod(0.5);
+				//m_snake.MoveHeadToBack();
+				/*m_snake.AdjustRefreshPeriod(0.5);
 				speedUpTracker.StartClock();*/
 
 				
@@ -210,8 +225,8 @@ bool GameLogic::StandardGameLoop()
 			}
 		}
 		
-		m_renderWindow.display();
+		Render(m_snake);
 	}
-	return false;
 }
+
 
