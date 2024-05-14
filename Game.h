@@ -4,6 +4,7 @@
 #include "Global.h";
 #include <iostream>; 
 #include "GUI.h";
+#include "Food.h";
 using std::vector;
 using namespace sf;
 
@@ -22,14 +23,14 @@ private:
 	void StandardGameLoop();
 	void HandleInput();
 	Time UpdateClock();
-	void Draw(Snake& r_snake); 
+	void Draw(Snake& r_snake); //shouldn't take a reference
 	RenderWindow& m_renderWindow;
-	RectangleShape m_food;
 	Vector2f** m_Grid;
 	GUI m_GUI;
 	Clock m_clock;
 	Time m_totalTimeElapsed;
-	Snake m_snake;
+	Snake* m_snake = nullptr; //dangling pointer after first game loop
+	Food* m_food;
 	int m_GridColumns = 0;
 	int m_GridRows = 0;
 };

@@ -26,8 +26,8 @@ bool Game::CollisionLoseState(const vector<RectangleShape*>& segments, const Vec
 
 Vector2f Game::GetLegalFoodPosition(vector<Vector2f> segmentPositions)
 {
-	const int gridColumns = m_GridColumns;
-	const int gridRows = m_GridRows;
+	const int& gridColumns = m_GridColumns;
+	const int& gridRows = m_GridRows;
 	vector<Vector2f> legalPositions;
 	for (int i = 0; i < m_GridColumns; i++)
 	{
@@ -52,7 +52,7 @@ Vector2f Game::GetLegalFoodPosition(vector<Vector2f> segmentPositions)
 
 void Game::Clear()
 {
-	m_renderWindow.clear(Color::Red);
+	m_renderWindow.clear(Color::Black);
 }
 
 void Game::Display()
@@ -71,7 +71,7 @@ bool Game::FoodCollision(Vector2f foodPosition, vector<Vector2f> segmentPosition
 	return false;
 }
 
-Game::Game(RenderWindow& renderWindow) : m_renderWindow(renderWindow), m_GUI(GUI(renderWindow)) // not sure why angry since it should call default constructor
+Game::Game(RenderWindow& renderWindow) : m_renderWindow(renderWindow), m_GUI(GUI(renderWindow)) // not sure why warning it's a pointer...
 {
 	
 	
@@ -115,8 +115,28 @@ void Game::StartGame()
 	while (m_renderWindow.isOpen())
 	{
 		Event event;
-		if (m_GUI.m_GUIOpen) 
+		Snake snake = Snake(SEGMENT_SIZE, HEAD_COLOR, WINDOW_RESOLUTION);
+		m_snake = &snake;
+		Food food = Food(SEGMENT_SIZE, GetLegalFoodPosition(m_snake->GetAllSegmentPositions()));
+		m_food = &food;
+		m_food->SetFoodTexture("assets\\muffin.png");
+		m_GUI.ScoreReset();
+		
+		while (m_GUI.m_GUIOpen) 
 		{
+			while (m_renderWindow.pollEvent(event))
+			{			
+				{
+					if (event.type == Event::MouseButtonReleased)
+						if (m_GUI.CheckForButton(SPEED_BUTTON)) food.ToggleSpeedModifier();
+							
+						else if (m_GUI.CheckForButton(REVERSE_BUTTON))
+						{
+							food.ToggleReverseModifier();
+						}
+				}
+			}
+			
 			if (m_GUI.CheckForPlay())
 			{
 				cout << "play" << endl;
@@ -128,10 +148,10 @@ void Game::StartGame()
 			}
 			
 			m_renderWindow.clear();
-			m_GUI.DrawText();
+			m_GUI.DrawOptions();
 			m_renderWindow.display();
 		}
-		else 
+		
 		{
 			StandardGameLoop();
 			m_GUI.m_GUIOpen = true;
@@ -149,7 +169,7 @@ Time Game::UpdateClock()
 
 void Game::Draw(Snake& r_snake)
 {
-	m_renderWindow.draw(m_food);
+	(*m_food).DrawFood(m_renderWindow);
 	r_snake.DrawHeadSegment(m_renderWindow);
 	r_snake.DrawSegments(m_renderWindow);
 	m_GUI.DrawScore();
@@ -168,19 +188,19 @@ void Game::HandleInput()
 			switch (event.key.code)
 			{
 			case Keyboard::Key::W:
-				m_snake.SetDirection(UP);
+				m_snake->SetDirection(UP);
 				break;
 			case Keyboard::Key::S:
-				m_snake.SetDirection(DOWN);
+				m_snake->SetDirection(DOWN);
 				break;
 			case Keyboard::Key::A:
-				m_snake.SetDirection(RIGHT);
+				m_snake->SetDirection(RIGHT);
 				break;
 			case Keyboard::Key::D:
-				m_snake.SetDirection(LEFT);
+				m_snake->SetDirection(LEFT);
 				break;
 			case Keyboard::Key::Space:
-				m_snake.AddSegment();
+				m_snake->AddSegment();
 			default:
 				break;
 			}
@@ -190,57 +210,43 @@ void Game::HandleInput()
 
 void Game::StandardGameLoop()
 {
-	
 	/*RectangleShape background(Vector2f(1024, 1024));
 	background.setPosition(0, 0);
 	background.setFillColor(Color::Black);*/
 
-	
 	Sound sound(AssetManager::GetSoundBuffer("assets\\question.wav"));
 	sound.setVolume(20);
 	
-	m_snake = Snake(SEGMENT_SIZE, HEAD_COLOR, WINDOW_RESOLUTION);
-	m_food.setSize(Vector2f(SEGMENT_SIZE.x, SEGMENT_SIZE.y));
-	m_food.setFillColor(Color::Blue);
-	Vector2f legalFoodPosition = GetLegalFoodPosition(m_snake.GetAllSegmentPositions());
-	m_food.setPosition(legalFoodPosition);
-	m_food.setTexture(&(AssetManager::GetTexture("assets\\muffin.png")));
-
 	while (m_renderWindow.isOpen()) 
 	{
 		UpdateClock();
 		HandleInput();
 
-		if (m_snake.MoveAlongSnake(m_totalTimeElapsed))
+		if (m_snake->MoveAlongSnake(m_totalTimeElapsed))
 		{
-			if (Game::OutOfBoundsLoseState(m_snake.GetLocation())) // checks if head segement is no longer in viewscope
+			if (Game::OutOfBoundsLoseState(m_snake->GetLocation())) // checks if head segement is no longer in viewscope
 			{
-				cout << "out of bounds" << " " << m_snake.GetAllSegmentPositions()[0].x << endl;
+				cout << "out of bounds" << " " << m_snake->GetAllSegmentPositions()[0].x << endl;
 				break;
 			}
-			if (Game::CollisionLoseState(m_snake.GetSegmentsAsReference(), m_snake.GetLocation()))
+			if (Game::CollisionLoseState(m_snake->GetSegmentsAsReference(), m_snake->GetLocation()))
 			{
 				cout << "collision detected" << endl;
 				//lose text
 				break;
 			}
-			if (Game::FoodCollision(m_food.getPosition(), m_snake.GetAllSegmentPositions()))
+			if (Game::FoodCollision(m_food->GetFoodPosition(), m_snake->GetAllSegmentPositions()))
 			{
-				Vector2f legalFoodPosition = GetLegalFoodPosition(m_snake.GetAllSegmentPositions());
-				m_food.setPosition(legalFoodPosition);
-				m_snake.AddSegment();
+				Vector2f legalFoodPosition = GetLegalFoodPosition(m_snake->GetAllSegmentPositions());
+				m_food->SetFoodPosition(legalFoodPosition);
+				m_snake->AddSegment();
 				m_GUI.IncrementScore();
-				//m_snake.MoveHeadToBack();
-				/*m_snake.AdjustRefreshPeriod(0.5);
-				speedUpTracker.StartClock();*/
-
-				
 				sound.play();
 			}
 		}
 		Clear();
 		/*m_renderWindow.draw(background);*/
-		Draw(m_snake);
+		Draw(*m_snake);
 		Display();
 	}
 }

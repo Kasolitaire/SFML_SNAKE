@@ -11,26 +11,27 @@ bool GUI::CheckForHover(Text& text)
 		&& (mousePos.y >= textPos.y && mousePos.y <= textPos.y + text.getGlobalBounds().getSize().y)
 		) 
 	{
-		text.setFillColor(sf::Color::Red);
 		return true;
-	}
-	else 
-	{
-		text.setFillColor(sf::Color::White);
 	}
 	return false;
 }
 
-void GUI::OnHover()
+void GUI::OnHover(Text& text)
 {
+	text.setFillColor(sf::Color::Red);
 }
 
-void GUI::DrawText()
+void GUI::OnHoverExit(Text& text)
 {
-	
+	text.setFillColor(sf::Color::White);
+}
+
+void GUI::DrawOptions()
+{
 	for (auto& iter : m_GUITextMap) 
 	{
-		r_renderWindow.draw(iter.second);
+		if(iter.first != "SCORE")
+			r_renderWindow.draw(iter.second);
 	}
 }
 
@@ -38,50 +39,75 @@ GUI::GUI(RenderWindow& renderWindow) : r_renderWindow(renderWindow)
 {
 	Font& font = AssetManager::GetFont(FONT_PATH);
 	
-	m_scoreText.setCharacterSize(50); // in pixels, not points!
-	m_scoreText.setFillColor(sf::Color::White);
-	m_scoreText.setPosition(50, 0); // maybe should be coordintaes should be global
-	m_scoreText.setString("SCORE 0");
-	m_scoreText.setFont(font);
-
 	m_GUITextMap["PLAY"] = CreateTextOption("PLAY", font, Color::White, 50);
 	m_GUITextMap["EXIT"] = CreateTextOption("EXIT", font, Color::White, 50);
+	m_GUITextMap["SCORE"] = CreateTextOption("SCORE 0", font, Color::White, 50);
+	m_GUITextMap[SPEED_BUTTON] = CreateTextOption("SPEED MODIFIER", font, Color::White, 50);
+	m_GUITextMap[REVERSE_BUTTON] = CreateTextOption("REVERSE MODIFIER", font, Color::White, 50);
 	
 	m_GUITextMap["PLAY"].setPosition(WINDOW_RESOLUTION.x / 2, WINDOW_RESOLUTION.y / 2);
 	m_GUITextMap["EXIT"].setPosition(WINDOW_RESOLUTION.x / 2, WINDOW_RESOLUTION.y / 2 + 50);
+	m_GUITextMap["SCORE"].setPosition(100, 0);
+	m_GUITextMap[SPEED_BUTTON].setPosition(500, 0);
+	m_GUITextMap[REVERSE_BUTTON].setPosition(700, 0);
 }
 
 bool GUI::CheckForPlay()
 {
-	if (CheckForHover(m_GUITextMap["PLAY"]) && Mouse::isButtonPressed(Mouse::Button::Left))
-		return true;
+	if (CheckForHover(m_GUITextMap["PLAY"])) 
+	{
+		OnHover(m_GUITextMap["PLAY"]);
+		if (Mouse::isButtonPressed(Mouse::Button::Left))
+			return true;
+	}
 	else
-		return false;
+		OnHoverExit(m_GUITextMap["PLAY"]);
+	return false;
 }
 
 bool GUI::CheckForExit()
 {
-	if (CheckForHover(m_GUITextMap["EXIT"]) && Mouse::isButtonPressed(Mouse::Button::Left))
-		return true;
+	if (CheckForHover(m_GUITextMap["EXIT"]))
+	{
+		OnHover(m_GUITextMap["EXIT"]);
+		if (Mouse::isButtonPressed(Mouse::Button::Left))
+			return true;
+	}
 	else
-		return false;
+		OnHoverExit(m_GUITextMap["EXIT"]);
+	return false;
 }
 
 void GUI::IncrementScore()
 {
 	m_score += SCORE_INCREMENT;
-	m_scoreText.setString("SCORE " + to_string(m_score));
+	m_GUITextMap["SCORE"].setString("SCORE " + to_string(m_score));
 }
 
 void GUI::ScoreReset()
 {
 	m_score = 0;
-	m_scoreText.setString("SCORE " + to_string(m_score));
+	m_GUITextMap["SCORE"].setString("SCORE " + to_string(m_score));
 }
 
 void GUI::DrawScore()
 {
-	r_renderWindow.draw(m_scoreText);
+	r_renderWindow.draw(m_GUITextMap["SCORE"]);
+}
+
+bool GUI::CheckForButton(const string& buttonType)
+{
+	if (CheckForHover(m_GUITextMap[buttonType])) //is button pressed not ideal need on release or bool
+	{
+		cout << "clicked";
+		Color color = m_GUITextMap[buttonType].getFillColor();
+		if (color == Color::White)
+			color = Color::Red;
+		else color = Color::White;
+		m_GUITextMap[buttonType].setFillColor(color);
+		return true;
+	}
+	return false;
 }
 
 Text GUI::CreateTextOption(const string& content, const Font& font, Color color, const unsigned int& size)
@@ -91,5 +117,12 @@ Text GUI::CreateTextOption(const string& content, const Font& font, Color color,
 	text.setString(content);
 	text.setFillColor(color);
 	text.setCharacterSize(size);
+	Vector2f textSize = text.getGlobalBounds().getSize();
+	
+	//can become blurry if not rounded
+	textSize.x = round(textSize.x / 2);
+	textSize.y = round(textSize.y / 2); 
+	
+	text.setOrigin(textSize);
 	return text;
 }
