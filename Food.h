@@ -12,6 +12,8 @@ public:
 	Food(const Vector2f& size, const Vector2f& position);
 	bool ToggleReverseModifier(); // for use with GUI
 	bool ToggleSpeedModifier(); // for use with GUI
+	bool SpeedModifierEnabled();
+	bool ReversemodifierEnabled();
 	void SetFoodTexture(const string& filename); // apply textures to food
 	void SetRandomFoodType();
 	void SetFoodPosition(const Vector2f& position);

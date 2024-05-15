@@ -48,8 +48,8 @@ GUI::GUI(RenderWindow& renderWindow) : r_renderWindow(renderWindow)
 	m_GUITextMap["PLAY"].setPosition(WINDOW_RESOLUTION.x / 2, WINDOW_RESOLUTION.y / 2);
 	m_GUITextMap["EXIT"].setPosition(WINDOW_RESOLUTION.x / 2, WINDOW_RESOLUTION.y / 2 + 50);
 	m_GUITextMap["SCORE"].setPosition(100, 0);
-	m_GUITextMap[SPEED_BUTTON].setPosition(500, 0);
-	m_GUITextMap[REVERSE_BUTTON].setPosition(700, 0);
+	m_GUITextMap[SPEED_BUTTON].setPosition(350, 550);
+	m_GUITextMap[REVERSE_BUTTON].setPosition(350, 500);
 }
 
 bool GUI::CheckForPlay()

@@ -71,7 +71,7 @@ bool Game::FoodCollision(Vector2f foodPosition, vector<Vector2f> segmentPosition
 	return false;
 }
 
-Game::Game(RenderWindow& renderWindow) : m_renderWindow(renderWindow), m_GUI(GUI(renderWindow)) // not sure why warning it's a pointer...
+Game::Game(RenderWindow& renderWindow) : m_renderWindow(renderWindow), m_GUI(new GUI(renderWindow)) // not sure why warning it's a pointer...
 {
 	
 	
@@ -114,47 +114,48 @@ void Game::StartGame()
 	
 	while (m_renderWindow.isOpen())
 	{
+		delete m_GUI;
+		m_GUI = new GUI(m_renderWindow);
 		Event event;
 		Snake snake = Snake(SEGMENT_SIZE, HEAD_COLOR, WINDOW_RESOLUTION);
 		m_snake = &snake;
 		Food food = Food(SEGMENT_SIZE, GetLegalFoodPosition(m_snake->GetAllSegmentPositions()));
 		m_food = &food;
 		m_food->SetFoodTexture("assets\\muffin.png");
-		m_GUI.ScoreReset();
+		m_GUI->ScoreReset();
 		
-		while (m_GUI.m_GUIOpen) 
+		while (m_GUI->m_GUIOpen) 
 		{
 			while (m_renderWindow.pollEvent(event))
 			{			
 				{
 					if (event.type == Event::MouseButtonReleased)
-						if (m_GUI.CheckForButton(SPEED_BUTTON)) food.ToggleSpeedModifier();
+						if (m_GUI->CheckForButton(SPEED_BUTTON)) food.ToggleSpeedModifier();
 							
-						else if (m_GUI.CheckForButton(REVERSE_BUTTON))
+						else if (m_GUI->CheckForButton(REVERSE_BUTTON))
 						{
 							food.ToggleReverseModifier();
 						}
 				}
 			}
 			
-			if (m_GUI.CheckForPlay())
+			if (m_GUI->CheckForPlay())
 			{
 				cout << "play" << endl;
-				m_GUI.m_GUIOpen = false;
+				m_GUI->m_GUIOpen = false;
 			}
-			else if (m_GUI.CheckForExit())
+			else if (m_GUI->CheckForExit())
 			{
 				m_renderWindow.close();
 			}
 			
 			m_renderWindow.clear();
-			m_GUI.DrawOptions();
+			m_GUI->DrawOptions();
 			m_renderWindow.display();
 		}
 		
 		{
 			StandardGameLoop();
-			m_GUI.m_GUIOpen = true;
 		}
 	}
 }
@@ -172,7 +173,7 @@ void Game::Draw(Snake& r_snake)
 	(*m_food).DrawFood(m_renderWindow);
 	r_snake.DrawHeadSegment(m_renderWindow);
 	r_snake.DrawSegments(m_renderWindow);
-	m_GUI.DrawScore();
+	m_GUI->DrawScore();
 }
 
 void Game::HandleInput()
@@ -237,10 +238,12 @@ void Game::StandardGameLoop()
 			}
 			if (Game::FoodCollision(m_food->GetFoodPosition(), m_snake->GetAllSegmentPositions()))
 			{
+				if (m_food->ReversemodifierEnabled())
+					m_snake->MoveHeadToBack();
 				Vector2f legalFoodPosition = GetLegalFoodPosition(m_snake->GetAllSegmentPositions());
 				m_food->SetFoodPosition(legalFoodPosition);
 				m_snake->AddSegment();
-				m_GUI.IncrementScore();
+				m_GUI->IncrementScore();
 				sound.play();
 			}
 		}

@@ -26,7 +26,7 @@ private:
 	void Draw(Snake& r_snake); //shouldn't take a reference
 	RenderWindow& m_renderWindow;
 	Vector2f** m_Grid;
-	GUI m_GUI;
+	GUI* m_GUI;
 	Clock m_clock;
 	Time m_totalTimeElapsed;
 	Snake* m_snake = nullptr; //dangling pointer after first game loop

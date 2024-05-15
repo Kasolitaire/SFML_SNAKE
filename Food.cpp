@@ -21,6 +21,16 @@ bool Food::ToggleSpeedModifier()
     return m_speedModifierEnable;
 }
 
+bool Food::SpeedModifierEnabled()
+{
+    return m_speedModifierEnable;
+}
+
+bool Food::ReversemodifierEnabled()
+{
+    return m_reverseModifierEnable;
+}
+
 void Food::SetFoodTexture(const string& filename)
 {
     m_food.setTexture(&(AssetManager::GetTexture(filename)));
